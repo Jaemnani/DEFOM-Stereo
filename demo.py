@@ -11,9 +11,9 @@ from core.defom_stereo import DEFOMStereo
 from utils.utils import InputPadder
 from PIL import Image
 from matplotlib import pyplot as plt
+from time import time
 
-
-DEVICE = 'cuda'
+DEVICE = 'cpu'
 
 def load_image(imfile):
     img = np.array(Image.open(imfile)).astype(np.uint8)
@@ -22,7 +22,7 @@ def load_image(imfile):
 
 def demo(args):
     model = DEFOMStereo(args)
-    checkpoint = torch.load(args.restore_ckpt, map_location='cuda')
+    checkpoint = torch.load(args.restore_ckpt, map_location=DEVICE)
     if 'model' in checkpoint:
             model.load_state_dict(checkpoint['model'])
     else:
@@ -40,15 +40,24 @@ def demo(args):
         print(f"Found {len(left_images)} images. Saving files to {output_directory}/")
 
         for (imfile1, imfile2) in tqdm(list(zip(left_images, right_images))):
+            st = time()
             image1 = load_image(imfile1)
             image2 = load_image(imfile2)
 
             padder = InputPadder(image1.shape, divis_by=32)
             image1, image2 = padder.pad(image1, image2)
-
+            ed = time()
+            print(f"image shape : {image1.shape}")
+            print(f"Preprocessing Time : {ed-st} [s]")
+            st = time()
             with torch.no_grad():
                 disp_pr = model(image1, image2, iters=args.valid_iters, scale_iters=args.scale_iters, test_mode=True)
+            ed = time()
+            print(f"Inference Time : {ed -st} [s]")
+            st = time()
             disp_pr = padder.unpad(disp_pr).cpu().squeeze().numpy()
+            ed = time()
+            print(f"Postprocessing Time : {ed-st} [s]")
 
             file_stem = imfile1.split('/')[-1].split('_')[0]+'_'+args.restore_ckpt.split('/')[-1][:-4]
             if args.save_numpy:
@@ -58,7 +67,10 @@ def demo(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--restore_ckpt', help="restore checkpoint", required=True)
+    parser.add_argument('--restore_ckpt', help="restore checkpoint", 
+                        default= "checkpoints/defomstereo_vits_rvc.pth",
+                        # required=True
+                        )
     parser.add_argument('--save_numpy', action='store_true', help='save output as numpy arrays')
     parser.add_argument('-l', '--left_imgs', help="path to all first (left) frames", default="demo/*_left.png")
     parser.add_argument('-r', '--right_imgs', help="path to all second (right) frames", default="demo/*_right.png")
@@ -68,7 +80,8 @@ if __name__ == '__main__':
     parser.add_argument('--scale_iters', type=int, default=8, help="number of scaling updates to the disparity field in each forward pass.")
 
     # Architecture choices
-    parser.add_argument('--dinov2_encoder', type=str, default='vitl', choices=['vits', 'vitb', 'vitl', 'vitg'])
+    # parser.add_argument('--dinov2_encoder', type=str, default='vitl', choices=['vits', 'vitb', 'vitl', 'vitg'])
+    parser.add_argument('--dinov2_encoder', type=str, default='vits', choices=['vits', 'vitb', 'vitl', 'vitg'])
     parser.add_argument('--idepth_scale', type=float, default=0.5, help="the scale of inverse depth to initialize disparity")
     parser.add_argument('--hidden_dims', nargs='+', type=int, default=[128]*3, help="hidden state and context dimensions")
     parser.add_argument('--corr_implementation', choices=["reg", "alt", "reg_cuda", "alt_cuda"], default="reg", help="correlation volume implementation")

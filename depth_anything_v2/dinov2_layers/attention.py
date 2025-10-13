@@ -13,6 +13,7 @@ import logging
 from torch import Tensor
 from torch import nn
 
+import torch.nn.functional as F
 
 logger = logging.getLogger("dinov2")
 
@@ -67,13 +68,28 @@ class MemEffAttention(Attention):
         if not XFORMERS_AVAILABLE:
             assert attn_bias is None, "xFormers is required for nested tensors usage"
             return super().forward(x)
-
+        
         B, N, C = x.shape
         qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, C // self.num_heads)
 
         q, k, v = unbind(qkv, 2)
 
-        x = memory_efficient_attention(q, k, v, attn_bias=attn_bias)
+        if q.is_cuda:
+            x = memory_efficient_attention(q, k, v, attn_bias=attn_bias)
+        else: # cpu
+            if attn_bias is not None:
+                raise NotImplementedError("CPU SDPA 경로에서 attn_bias 처리가 아직 구현되지 않았습니다.")
+            q_t = q.permute(0, 2, 1, 3)  # B,H,L,D
+            k_t = k.permute(0, 2, 1, 3)
+            v_t = v.permute(0, 2, 1, 3)
+            out = F.scaled_dot_product_attention(
+                q_t, k_t, v_t,
+                attn_mask=None,     # attn_bias가 None이던 케이스
+                dropout_p=0.0,
+                is_causal=False
+            )
+            x = out.permute(0, 2, 1, 3).contiguous()
+            
         x = x.reshape([B, N, C])
 
         x = self.proj(x)
