@@ -32,7 +32,7 @@ class DEFOMStereo(nn.Module):
 
         context_dims = args.hidden_dims
 
-        self.fnet = BasicEncoder(self.defomencoder.out_dim, output_dim=256, norm_fn='instance', downsample=args.n_downsample)
+        self.fnet = BasicEncoder(self.defomencoder.out_dim, output_dim=256, norm_fn='instance', downsample=args.n_downsample, encoder_type=args.dinov2_encoder)
 
         self.context_zqr_convs = nn.ModuleList([nn.Conv2d(context_dims[i], args.hidden_dims[i]*3, 3, padding=3//2) for i in range(self.args.n_gru_layers)])
 

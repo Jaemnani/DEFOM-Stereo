@@ -336,6 +336,42 @@ def init_weights_vit_timm(module: nn.Module, name: str = ""):
             nn.init.zeros_(module.bias)
 
 
+
+# --- 새로운 ViT Nano (VITN) 정의 ---
+def vit_nano(patch_size=16, num_register_tokens=0, **kwargs):
+    """
+    ViT Nano 모델 정의. 최소 연산량을 위한 더 작은 임베딩 차원과 깊이를 사용합니다.
+    """
+    model = DinoVisionTransformer(
+        patch_size=patch_size,
+        embed_dim=96,  # VITN: 192 (매우 작게 설정)
+        depth=6,        # 깊이도 절반 (6개 레이어)
+        num_heads=4,
+        mlp_ratio=4,
+        block_fn=partial(Block, attn_class=MemEffAttention),
+        num_register_tokens=num_register_tokens,
+        **kwargs,
+    )
+    return model
+
+# --- 새로운 ViT Tiny (VITT) 정의 ---
+def vit_tiny(patch_size=16, num_register_tokens=0, **kwargs):
+    """
+    ViT Tiny 모델 정의. VITS (384)보다 작은 임베딩 차원과 깊이를 사용합니다.
+    (예: DINOv1 ViT-T 기반)
+    """
+    model = DinoVisionTransformer(
+        patch_size=patch_size,
+        embed_dim=256,  # VITT: 192 (VITS의 절반)
+        depth=12,
+        num_heads=4,    # 헤드 수 역시 6에서 3으로 절반
+        mlp_ratio=4,
+        block_fn=partial(Block, attn_class=MemEffAttention),
+        num_register_tokens=num_register_tokens,
+        **kwargs,
+    )
+    return model
+
 def vit_small(patch_size=16, num_register_tokens=0, **kwargs):
     model = DinoVisionTransformer(
         patch_size=patch_size,
@@ -397,6 +433,8 @@ def vit_giant2(patch_size=16, num_register_tokens=0, **kwargs):
 
 def DINOv2(model_name):
     model_zoo = {
+        "vitn": vit_nano,
+        "vitt": vit_tiny,
         "vits": vit_small, 
         "vitb": vit_base, 
         "vitl": vit_large, 

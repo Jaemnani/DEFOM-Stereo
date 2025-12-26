@@ -242,31 +242,31 @@ class Middlebury(StereoDataset):
         assert image_set in ["training", "test"]
 
         if split == "2005":
-            scenes = list((Path(root) / "2005").glob("*"))
+            scenes = list(filter(os.path.isdir, (Path(root) / "2005").glob("*")))
             for scene in scenes:
                 self.image_list += [[str(scene / "view1.png"), str(scene / "view5.png")]]
                 self.disparity_list += [[str(scene / "disp1.png"), str(scene / "disp5.png")]]    
-                for illum in ["1", "2", "3"]:
-                    for exp in ["0", "1", "2"]:       
-                        self.image_list += [[str(scene / f"Illum{illum}/Exp{exp}/view1.png"), str(scene / f"Illum{illum}/Exp{exp}/view5.png")]]
-                        self.disparity_list += [[str(scene / "disp1.png"), str(scene / "disp5.png")]]       
+                # for illum in ["1", "2", "3"]:
+                #     for exp in ["0", "1", "2"]:       
+                #         # self.image_list += [[str(scene / f"Illum{illum}/Exp{exp}/view1.png"), str(scene / f"Illum{illum}/Exp{exp}/view5.png")]]
+                #         self.disparity_list += [[str(scene / "disp1.png"), str(scene / "disp5.png")]]       
         elif split == "2006":
-            scenes = list((Path(root) / "2006").glob("*"))
+            scenes = list(filter(os.path.isdir, (Path(root) / "2006").glob("*")))
             for scene in scenes:
                 self.image_list += [[str(scene / "view1.png"), str(scene / "view5.png")]]
                 self.disparity_list += [[str(scene / "disp1.png"), str(scene / "disp5.png")]]   
-                for illum in ["1", "2", "3"]:
-                    for exp in ["0", "1", "2"]:       
-                        self.image_list += [[str(scene / f"Illum{illum}/Exp{exp}/view1.png"), str(scene / f"Illum{illum}/Exp{exp}/view5.png")]]
-                        self.disparity_list += [[str(scene / "disp1.png"), str(scene / "disp5.png")]]  
+                # for illum in ["1", "2", "3"]:
+                #     for exp in ["0", "1", "2"]:       
+                #         self.image_list += [[str(scene / f"Illum{illum}/Exp{exp}/view1.png"), str(scene / f"Illum{illum}/Exp{exp}/view5.png")]]
+                #         self.disparity_list += [[str(scene / "disp1.png"), str(scene / "disp5.png")]]  
         elif split == "2014": # datasets/Middlebury/2014/Pipes-perfect/im0.png
-            scenes = list((Path(root) / "2014").glob("*"))
+            scenes = list(filter(os.path.isdir, (Path(root) / "2014").glob("*")))
             for scene in scenes:
                 for s in ["E", "L", ""]:
                     self.image_list += [[str(scene / "im0.png"), str(scene / f"im1{s}.png")]]
                     self.disparity_list += [[str(scene / "disp0.pfm"), str(scene / "disp1.pfm")]]
         elif split == "2021":
-            scenes = list((Path(root) / "2021/data").glob("*"))
+            scenes = list(filter(os.path.isdir, (Path(root) / "2021/data").glob("*")))
             for scene in scenes:
                 self.image_list += [[str(scene / "im0.png"), str(scene / "im1.png")]]
                 self.disparity_list += [[str(scene / "disp0.pfm"), str(scene / "disp1.pfm")]]

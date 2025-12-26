@@ -160,37 +160,47 @@ class BottleneckBlock(nn.Module):
 
 
 class BasicEncoder(nn.Module):
-    def __init__(self, d_dim, output_dim=128, norm_fn='batch', downsample=3):
+    def __init__(self, d_dim, output_dim=128, norm_fn='batch', downsample=3, encoder_type='vits'):
         super(BasicEncoder, self).__init__()
         self.norm_fn = norm_fn
         self.downsample = downsample
 
+        # vit_nt = False
+        if encoder_type == "vitt":
+            self.in_planes = 48
+            c1, c2, c3 = 48, 72, 96
+        elif encoder_type == "vitn":
+            self.in_planes = 32
+            c1, c2, c3 = 32, 48, 64
+        else:
+            self.in_planes = 64
+            c1, c2, c3 = 64, 96,128
+
         if self.norm_fn == 'group':
-            self.norm1 = nn.GroupNorm(num_groups=8, num_channels=64)
+            self.norm1 = nn.GroupNorm(num_groups=c1 // 8 , num_channels=c1)
             
         elif self.norm_fn == 'batch':
-            self.norm1 = nn.BatchNorm2d(64)
+            self.norm1 = nn.BatchNorm2d(c1)
 
         elif self.norm_fn == 'instance':
-            self.norm1 = nn.InstanceNorm2d(64)
+            self.norm1 = nn.InstanceNorm2d(c1)
 
         elif self.norm_fn == 'none':
             self.norm1 = nn.Sequential()
 
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=1 + (downsample > 2), padding=3)
+        self.conv1 = nn.Conv2d(3, c1, kernel_size=7, stride=1 + (downsample > 2), padding=3)
         self.relu1 = nn.ReLU(inplace=True)
 
-        self.in_planes = 64
-        self.layer1 = self._make_layer(64,  stride=1)
-        self.layer2 = self._make_layer(96, stride=1 + (downsample > 1))
-        self.layer3 = self._make_layer(128, stride=1 + (downsample > 0))
-
+        self.layer1 = self._make_layer(c1, stride=1)
+        self.layer2 = self._make_layer(c2, stride=1 + (downsample > 1))
+        self.layer3 = self._make_layer(c3, stride=1 + (downsample > 0))
+        
         # depth feat convolution
-        self.convd = ConvBlock(d_dim, 128, self.norm_fn)
-
+        self.convd = ConvBlock(d_dim, c3, self.norm_fn)
+            
         # output convolution
-        self.conv2 = nn.Conv2d(128, output_dim, kernel_size=1)
-
+        self.conv2 = nn.Conv2d(c3, output_dim, kernel_size=1)
+        
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
@@ -353,6 +363,8 @@ class DefomEncoder(nn.Module):
         self.freeze = freeze
 
         model_configs = {
+            'vitn': {'encoder': 'vitn', 'features': 16, 'out_channels': [16, 32, 64, 128]},
+            'vitt': {'encoder': 'vitt', 'features': 32, 'out_channels': [32, 64, 128, 256]},
             'vits': {'encoder': 'vits', 'features': 64, 'out_channels': [48, 96, 192, 384]},
             'vitb': {'encoder': 'vitb', 'features': 128, 'out_channels': [96, 192, 384, 768]},
             'vitl': {'encoder': 'vitl', 'features': 256, 'out_channels': [256, 512, 1024, 1024]},
