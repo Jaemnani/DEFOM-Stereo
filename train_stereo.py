@@ -123,6 +123,8 @@ def train(args):
     logger = Logger(model, scheduler, args.name)
     logger.total_steps = total_steps
 
+    os.makedirs(args.save_path, exist_ok=True)
+
     model.train()
     scaler = GradScaler(enabled=args.mixed_precision)
     should_keep_training = True
@@ -167,7 +169,8 @@ def train(args):
                 logger.push(metrics)
 
                 if total_steps % args.save_latest_ckpt_freq == 0:
-                    save_path = Path('checkpoints/%s/checkpoint_latest.pth' % (args.name))
+                    # save_path = Path('checkpoints/%s/checkpoint_latest.pth' % (args.name))
+                    save_path = Path( f'{args.save_path}/checkpoint_latest.pth')
                     logging.info(f"Saving file {save_path.absolute()}")
                     save_dict = { 'model': model_without_ddp.state_dict(),
                                   'optimizer': optimizer.state_dict(),
@@ -176,7 +179,8 @@ def train(args):
                     torch.save(save_dict, save_path)
 
                 if total_steps % args.save_ckpt_freq == 0:
-                    save_path = Path('checkpoints/%s/%s_%6d.pth' % (args.name, args.name, total_steps))
+                    # save_path = Path('checkpoints/%s/%s_%6d.pth' % (args.name, args.name, total_steps))
+                    save_path = Path( f'{args.save_path}/{args.name}_{total_steps:06d}.pth')
                     logging.info(f"Saving file {save_path.absolute()}")
                     torch.save(model_without_ddp.state_dict(), save_path)
 
@@ -205,7 +209,8 @@ def train(args):
         epoch += 1
 
         if len(train_loader) >= 10000:
-            save_path = Path('checkpoints/%s/%d_epoch_%s.pth.gz' % (args.name, total_steps, args.name))
+            # save_path = Path('checkpoints/%s/%d_epoch_%s.pth.gz' % (args.name, total_steps, args.name))
+            save_path = Path( f'{args.save_path}/{total_steps}_epoch_{args.name}.pth.gz')
             logging.info(f"Saving file {save_path}")
             torch.save(model_without_ddp.state_dict(), save_path)
 
@@ -220,7 +225,7 @@ def train(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', default='defom-stereo', help="name your experiment")
-
+    parser.add_argument('--save_path', default='results/train/defomstereo_vitt_sceneflow', help="save path of checkpoints(models)")
     # resume pretrained model or resume training
     parser.add_argument('--resume_ckpt', default=None, type=str,
                         help='resume from pretrained model or resume from unexpectedly terminated training')
@@ -257,7 +262,11 @@ if __name__ == '__main__':
     parser.add_argument('--valid_iters', type=int, default=32, help='number of disparity field updates during validation forward pass')
 
     # Raft Architecure choices
-    parser.add_argument('--dinov2_encoder', type=str, default='vits', choices=['vits', 'vitb', 'vitl', 'vitg'])
+    parser.add_argument('--dinov2_encoder', type=str, 
+                        default='vits', 
+                        choices=['vitn', 'vitt', 'vits', 'vitb', 'vitl', 'vitg']
+                        # choices=['vits', 'vitb', 'vitl', 'vitg']
+                        )
     parser.add_argument('--idepth_scale', type=float, default=0.5, help="the scale of inverse depth to initialize disparity")
     parser.add_argument('--corr_implementation', choices=["reg", "alt", "reg_cuda", "alt_cuda"], default="reg", help="correlation volume implementation")
     parser.add_argument('--corr_levels', type=int, default=2, help="number of levels in the correlation pyramid")
