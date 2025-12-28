@@ -5,3 +5,6 @@ activate
 checkpoints
 demo
 datasets
+results
+images_DEFOM*
+test_imgs
