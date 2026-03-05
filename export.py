@@ -59,6 +59,7 @@ def load_image(imfile):
     img = cv2.imread(imfile)
     if img is None:
         raise FileNotFoundError(f"Image file {imfile} not found.")
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     
     h_ori, w_ori = img.shape[:2]
     h_in, w_in = h_ori, w_ori
@@ -328,10 +329,10 @@ if __name__ == '__main__':
     # Export된 모델은 이 반복 횟수를 그래프 내에 고정합니다.
     # ---------------------------------------------------------
     # valid_iters: Original(32) -> Adjusted(8) for faster inference
-    parser.add_argument('--valid_iters', type=int, default=8, help='number of flow-field updates during forward pass')
+    parser.add_argument('--valid_iters', type=int, default=32, help='number of flow-field updates during forward pass')
     # scale_iters: Demo(2) vs Export(4)
     # Export 시에는 정확도를 위해 약간 높게 설정 (필요시 2로 낮출 수 있음)
-    parser.add_argument('--scale_iters', type=int, default=4, help="number of scaling updates to the disparity field in each forward pass.")
+    parser.add_argument('--scale_iters', type=int, default=8, help="number of scaling updates to the disparity field in each forward pass.")
 
     # ---------------------------------------------------------
     # [Model Architecture]

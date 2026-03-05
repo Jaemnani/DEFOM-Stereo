@@ -15,3 +15,10 @@ scikit-image
 pillow
 timm
 gdown
+opencv-python~=3.4
+natsort
+openvino==2023.3.0
+openvino-dev==2023.3.0
+nncf==2.8.1
+onnx
+onnxruntime
